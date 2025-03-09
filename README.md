@@ -4,14 +4,13 @@ This project allows users to fetch research papers from PubMed, filter authors b
 
 ## Project Structure
 
-```
-├── fetchpaper.py   # Core logic for fetching and parsing PubMed articles
-├── cli.py          # Command-line interface script
-├── requirements.txt # List of dependencies
-├── README.md       # Project documentation
-├── pyproject.toml  # Poetry project configuration
-└── pubmed_papers.csv  # Output file containing fetched results
-```
+- `src/` - Contains the main source code.
+  - `fetchpaper.py` - Fetches PubMed papers and extracts relevant details.
+  - `cli.py` - Command-line interface for fetching papers.
+- `tests/` - Contains test cases.
+- `pyproject.toml` - Project configuration for Poetry.
+- `poetry.lock` - Dependency lock file.
+- `README.md` - Documentation.
 
 ## Installation
 
@@ -38,15 +37,30 @@ This project allows users to fetch research papers from PubMed, filter authors b
 
 4. **Run the CLI Command**
    ```sh
-   poetry run get_papers "covid-19 vaccine" -f results.csv
+   poetry run get_papers "query" -f results.csv
    ```
    This will fetch papers related to "covid-19 vaccine" and save them in `results.csv`.
 
 ### Making the Script Globally Executable
+To run the script without `poetry run`, install it globally:
+```bash
+poetry install
+poetry run pip install --editable .
+get_papers "query" -f results.csv
+```
+#### Or
+
 Ensure that the Poetry virtual environment’s `bin` or `Scripts` directory is added to your `PATH`.
 ```sh
-   get_papers "covid-19 vaccine" -f results.csv
+   get_papers "query" -f results.csv
 ```
+eg. get_papers "gene therapy" --debug --file output.csv
+This will fetch PubMed articles related to "gene therapy" and save them in `results.csv`.
+
+### Command-line Options
+- `-h` or `--help` : Display usage instructions.
+- `-d` or `--debug` : Print debug information during execution.
+- `-f` or `--file` : Specify the filename to save the results. If not provided, the output is printed to the console.
 
 
 ## Tools & Libraries Used
@@ -55,10 +69,3 @@ Ensure that the Poetry virtual environment’s `bin` or `Scripts` directory is a
 - **Requests**: HTTP library for fetching data from PubMed API ([Requests Docs](https://docs.python-requests.org/en/latest/))
 - **XML Parsing (ElementTree)**: Extracting relevant data from PubMed XML responses ([ElementTree Docs](https://docs.python.org/3/library/xml.etree.elementtree.html))
 - **NCBI E-utilities API**: Used to search and fetch PubMed articles ([NCBI API Docs](https://www.ncbi.nlm.nih.gov/books/NBK25497/))
-
-## Author
-Developed by Anupama Minj
-
-## License
-This project is licensed under the MIT License.
-
