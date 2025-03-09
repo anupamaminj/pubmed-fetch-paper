@@ -69,3 +69,4 @@ This will fetch PubMed articles related to "gene therapy" and save them in `resu
 - **Requests**: HTTP library for fetching data from PubMed API ([Requests Docs](https://docs.python-requests.org/en/latest/))
 - **XML Parsing (ElementTree)**: Extracting relevant data from PubMed XML responses ([ElementTree Docs](https://docs.python.org/3/library/xml.etree.elementtree.html))
 - **NCBI E-utilities API**: Used to search and fetch PubMed articles ([NCBI API Docs](https://www.ncbi.nlm.nih.gov/books/NBK25497/))
+- **Postman**: Used for testing API requests and responses efficiently.
