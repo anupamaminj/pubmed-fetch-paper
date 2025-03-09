@@ -39,7 +39,7 @@ This project allows users to fetch research papers from PubMed, filter authors b
    ```sh
    poetry run get_papers "query" -f results.csv
    ```
-   This will fetch papers related to "covid-19 vaccine" and save them in `results.csv`.
+   This will fetch papers related to "query" and save them in `results.csv`.
 
 ### Making the Script Globally Executable
 To run the script without `poetry run`, install it globally:
