@@ -18,7 +18,6 @@ This project allows users to fetch research papers from PubMed, filter authors b
 ### Prerequisites
 - Python 3.8+
 - Poetry package manager
-- Internet connection (to fetch data from PubMed API)
 
 ### Steps to Install and Run
 1. **Clone the Repository**
@@ -29,7 +28,7 @@ This project allows users to fetch research papers from PubMed, filter authors b
 
 2. **Install Poetry (if not already installed)**
    ```sh
-   pip install --user poetry
+   pip install poetry
    ```
 
 3. **Install Dependencies**
@@ -39,17 +38,16 @@ This project allows users to fetch research papers from PubMed, filter authors b
 
 4. **Run the CLI Command**
    ```sh
-   poetry run get-papers-list "covid-19 vaccine" -f results.csv
+   poetry run get_papers "covid-19 vaccine" -f results.csv
    ```
    This will fetch papers related to "covid-19 vaccine" and save them in `results.csv`.
 
 ### Making the Script Globally Executable
-To run the command without `poetry run`, follow these steps:
-```sh
-poetry build
-poetry install
-```
 Ensure that the Poetry virtual environment’s `bin` or `Scripts` directory is added to your `PATH`.
+```sh
+   get_papers "covid-19 vaccine" -f results.csv
+```
+
 
 ## Tools & Libraries Used
 - **Python**: The programming language used for development.
