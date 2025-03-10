@@ -3,15 +3,31 @@ import xml.etree.ElementTree as ET
 import csv
 import sys
 from typing import List, Tuple, Optional
+import re
 
 # Define constants for PubMed API URLs
 SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 FETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
-# Keywords to identify non-academic affiliations
-AFFILIATION_KEYWORDS = ["Pharma", "Biotech", "Genomics", "Diagnostics", "Therapeutics", "Life Sciences"]
 
-def fetch_pubmed_papers(query: str, max_results: int = 20, debug: bool = False) -> List[str]:
+# Keywords to identify company affiliations
+COMPANY_KEYWORDS = [
+    "Pharmaceuticals", "Pharma", "Biotech", "Genomics", "Diagnostics",
+    "Therapeutics", "Life Sciences", "Biosciences", "BioPharma", 
+    "Biologics", "Biomedical", "Vaccines", "Drug", "Healthcare", "MedTech",
+    "Molecular", "Immunology", "Cell Therapy", "Gene Therapy", "Neuroscience"
+]
+
+
+# Keywords to exclude academic institutions
+ACADEMIC_KEYWORDS = [
+    "University", "Institute", "Research Center", "College", "School of Medicine", 
+    "Medical Center", "Academic Hospital", "Teaching Hospital", "Education", "VA Medical", 
+    "Geriatric Research", "Clinical Center", "National Institute", "Academy", "University", "Institute", "School", "College", "Academy", "Department", "Hospital", "Medical Center"
+]
+
+
+def fetch_pubmed_papers(query: str, max_results: int = 100, debug: bool = False) -> List[str]:
     """
     Fetch PubMed article IDs based on a user query.
     
@@ -50,6 +66,15 @@ def fetch_pubmed_papers(query: str, max_results: int = 20, debug: bool = False) 
         sys.exit(1)
 
 
+
+def extract_company_name(affiliation: str) -> str:
+    """ Extracts only the company name from an affiliation string. """
+    # Remove email and address details
+    company_name = re.sub(r",? *\d+.*$", "", affiliation)  # Remove address details
+    company_name = re.sub(r"\. Electronic address:.*", "", company_name)  # Remove email
+    
+    return company_name.strip()
+
 def fetch_paper_details(article_ids: List[str], debug: bool = False) -> List[Tuple[str, str, str, str, str, str]]:
     """
     Fetches detailed information about PubMed articles using EFetch API.
@@ -74,37 +99,57 @@ def fetch_paper_details(article_ids: List[str], debug: bool = False) -> List[Tup
 
         results = []
         for article in root.findall(".//PubmedArticle"):
-            pmid = article.find(".//PMID").text
-            title = article.find(".//ArticleTitle").text if article.find(".//ArticleTitle") is not None else "N/A"
-            pub_date = article.find(".//PubDate/Year")
-            pub_date = pub_date.text if pub_date is not None else "Unknown"
+            pmid = article.findtext(".//PMID", default="Unknown")
+            title = article.findtext(".//ArticleTitle", default="N/A")
+            pub_date = article.findtext(".//PubDate/Year", default="Unknown")
 
-            authors = []
-            affiliations = []
-            corresponding_email = ""
-
+            non_academic_authors = []  # Stores only author names
+            company_affiliations = set()  # Stores unique company names
+            emails = []  # Stores corresponding emails
+            
             for author in article.findall(".//Author"):
-                last_name = author.find("LastName")
-                fore_name = author.find("ForeName")
-                full_name = f"{fore_name.text} {last_name.text}" if fore_name is not None and last_name is not None else "Unknown"
-                authors.append(full_name)
+                last_name = author.findtext("LastName", default="")
+                fore_name = author.findtext("ForeName", default="")
+                full_name = f"{fore_name} {last_name}".strip() if fore_name or last_name else "Unknown"
+                
+                for aff_info in author.findall(".//AffiliationInfo"):
+                    affiliation = aff_info.findtext("Affiliation", default="")
 
-                affiliation = author.find(".//AffiliationInfo/Affiliation")
-                if affiliation is not None:
-                    affiliations.append(affiliation.text)
-                    if "email" in affiliation.text.lower():
-                        corresponding_email = affiliation.text
+                    # Check if affiliation belongs to a company
+                    is_company = any(keyword.lower() in affiliation.lower() for keyword in COMPANY_KEYWORDS)
+                    is_academic = any(keyword.lower() in affiliation.lower() for keyword in ACADEMIC_KEYWORDS)
 
-            # Filter non-academic authors
-            pharma_affiliations = [aff for aff in affiliations if any(keyword in aff for keyword in AFFILIATION_KEYWORDS)]
-            if pharma_affiliations:
-                results.append((pmid, title, pub_date, ", ".join(authors), ", ".join(pharma_affiliations), corresponding_email))
+                    if is_company and not is_academic:
+                        # Extract email if present
+                        email_match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", affiliation)
+                        email = email_match.group(0) if email_match else ""
+
+                        # Add non-academic author name only
+                        non_academic_authors.append(full_name)
+
+                        # Extract and store company name (cleaned)
+                        company_name = extract_company_name(affiliation)
+                        company_affiliations.add(company_name)
+
+                        # Store emails
+                        if email and email not in emails:
+                            emails.append(email)
+
+            if non_academic_authors:
+                results.append((
+                    pmid, title, pub_date,
+                    "; ".join(non_academic_authors),  # Only names
+                    "; ".join(company_affiliations),  # Only company names
+                    "; ".join(emails)  # Only emails
+                ))
 
         return results
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching paper details: {e}")
-        sys.exit(1)
+    except requests.RequestException as e:
+        if debug:
+            print(f"Error fetching data: {e}")
+        return []
+
 
 
 def save_to_csv(results: List[Tuple[str, str, str, str, str, str]], filename: str) -> None:
